@@ -24,11 +24,15 @@ class AtomSaveCommandsView
 		
 		# Append to base container if new result (or first item)
 		# Otherwise append to the previously made result
+		
+		
 		if newResult || !@resultDiv
 			@resultDiv = newDiv
 			@element.appendChild(newDiv)
 		else 
 			@resultDiv.appendChild(newDiv)
+			 
+		console.log(@element)
 	
 	# Removes all nodes from main element (container)
 	clearData: ->

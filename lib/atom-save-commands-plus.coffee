@@ -154,7 +154,7 @@ module.exports = AtomSaveCommands =
 
 		@subscriptions.add atom.workspace.addOpener (uri) =>			
 			if uri == @atomSaveCommandsGlobals.getURI()
-				new AtomSaveCommandsView 
+				@atomSaveCommandsView 
 				
 				
 		@subscriptions.add new Disposable(-> 
