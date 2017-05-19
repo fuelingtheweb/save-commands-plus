@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/pixilz/save-commands-plus.git"
+    "url": "github.com:pixilz/save-commands.git"
   },
   "keywords": [
     "monitor",
@@ -39,6 +39,7 @@
   "bugs": {
     "url": "https://github.com/pixilz/save-commands-plus/issues"
   },
+  "homepage": "https://github.com/pixilz/save-commands-plus",
   "dependencies": {
     "async": "^2.4.0",
     "cross-spawn-async": "^2.1.8",
