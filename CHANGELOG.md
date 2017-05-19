@@ -1,3 +1,6 @@
+## 0.0.0
+* Forked original project by Jason Hunt (JsonHunt) to create a package with new functionality, and more user friendly features.
+
 ## 0.6.8
 * removed menu items from file tree
 

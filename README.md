@@ -1,10 +1,13 @@
-# Save-commands package for Atom editor
+# save-commands-plus package for Atom editor
 
 This package allows you to define parametrized shell commands
 to be automatically run, in sequence, whenever a file matching glob pattern is saved.  
-This effectively eliminates the need for file watchers, and simplifies your build process.
+This effectively eliminates the need for file watchers, and simplifies your build process.  
 You can define as many globs and commands as you want.
-The command(s) and their output will be displayed in a panel at the bottom of the screen. Hit 'Esc' to dismiss the panel.
+The command(s) and their output will be displayed in a dock at the bottom of the screen. Hit 'Esc' to dismiss the dock.  
+
+*Note:* This package is a fork of the original "save-commands" package created by Jason Hunt (JsonHunt) that can be found [here](https://github.com/JsonHunt/save-commands).  
+Updates have been made to make it more user friendly and work with Atom's new dock system.
 
 ### How to use
 
@@ -32,7 +35,7 @@ You can create multiple save-commands.json files in various folders. The package
 (starting with the folder where saved file is located) until it finds a config file. That folder will also
 be used as current working directory for commands
 
-If you get errors when saving a file, double check your save-commands.json file to make sure it is formatted properly. As of version 0.6.7, the package will warn you if config file is malformed.
+If you get errors when saving a file, double check your save-commands.json file to make sure it is formatted properly. The package will warn you if the config file is malformed.
 
 ### Available parameters:  
 - absPath: absolute path of the saved file (without file name)  
@@ -43,9 +46,3 @@ If you get errors when saving a file, double check your save-commands.json file 
 - name: file name without extension  
 - ext: file extension  
 - sep: os specific path separator
-
-## Related packages
-
-### [Make coffee](https://github.com/JsonHunt/make-coffee)
-
-Great tool when you are migrating a project from JavaScript to CoffeeScript. Adds an option 'Make me a coffee' to .js files in tree-view.

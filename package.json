@@ -1,7 +1,7 @@
 {
   "name": "save-commands-plus",
   "main": "./lib/atom-save-commands-plus",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "description": "Package for Atom. Assign parametrized shell commands to file globs to be automatically run whenever the file is saved",
   "license": "ISC",
   "engines": {
@@ -27,15 +27,18 @@
     "run",
     "glob",
     "filename",
-    "shell"
+    "shell",
+    "terminal",
+    "cli",
+    "command line",
+    "cmd"
   ],
   "author": {
-    "name": "Jane Doe"
+    "name": "Zoë Clarno"
   },
   "bugs": {
     "url": "https://github.com/pixilz/save-commands-plus/issues"
   },
-  "homepage": "https://github.com/pixilz/save-commands-plus",
   "dependencies": {
     "async": "^2.4.0",
     "cross-spawn-async": "^2.1.8",
