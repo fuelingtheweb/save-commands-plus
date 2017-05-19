@@ -14,6 +14,7 @@ class AtomSaveCommandsView
 	# clsList - string of classes you want to display (separated by space)
 	addData: (content, clsList, newResult) ->
 		clsList = clsList.split(" ")
+		atBottom = @getIsScrolledToBottom()
 		
 		newDiv = document.createElement('div')
 		newDiv.textContent = content
@@ -23,16 +24,23 @@ class AtomSaveCommandsView
 		newDiv.classList.add.apply(newDiv.classList, clsList)
 		
 		# Append to base container if new result (or first item)
-		# Otherwise append to the previously made result
-		
-		
+		# Otherwise append to the previously made result		
 		if newResult || !@resultDiv
 			@resultDiv = newDiv
 			@element.appendChild(newDiv)
 		else 
 			@resultDiv.appendChild(newDiv)
-			 
-		console.log(@element)
+			
+		@autoScrollBottom(atBottom)
+	
+	getIsScrolledToBottom: () ->
+		# allow 1px inaccuracy by adding 1
+		return @element.scrollHeight - (@element.clientHeight) <= @element.scrollTop + 1
+		
+	autoScrollBottom: (isScrolledToBottom) ->
+		# scroll to bottom if isScrolledToBottom
+		if isScrolledToBottom
+			@element.scrollTop = @element.scrollHeight - (@element.clientHeight)
 	
 	# Removes all nodes from main element (container)
 	clearData: ->
