@@ -6,13 +6,14 @@ spawn = require 'cross-spawn-async'
 _ = require 'underscore'
 fs = require 'fs'
 async = require 'async'
-$ = jQuery = require 'jquery'
 
+AtomSaveCommandsGlobals = require './atom-save-commands-globals'
 AtomSaveCommandsView = require './atom-save-commands-view'
-{CompositeDisposable,Directory,File} = require 'atom'
+{CompositeDisposable,Disposable,Directory,File} = require 'atom'
 
 module.exports = AtomSaveCommands =
 	atomSaveCommandsView: null
+	atomSaveCommandsGlobals: new AtomSaveCommandsGlobals
 	modalPanel: null
 	subscriptions: null
 
@@ -56,13 +57,7 @@ module.exports = AtomSaveCommands =
 		@resultDiv = document.createElement('div')
 		@resultDiv.classList.add('save-result')
 		@resultDiv.classList.add('save-result-visible')
-		@resultDiv.classList.add('save-result-error')
-		@resultDiv.textContent = """
-			Malformed save command:
-			#{gc}
-
-			Usage: glob : command
-		"""
+		@resultDiv.classList.add('save-result-error') 
 		epanel.item.appendChild(@resultDiv)
 		setTimeout ()->
 			epanel.destroy()
@@ -94,11 +89,9 @@ module.exports = AtomSaveCommands =
 
 	executeCommand: (command, callback) ->
 		# console.log "COMMAND #{command}"
-		@cmdDiv = document.createElement('div')
-		@cmdDiv.textContent = command
-		@cmdDiv.classList.add('command-name')
-		@resultDiv.appendChild @cmdDiv
-
+		
+		@atomSaveCommandsView.addData(command, 'command-name', false)
+		
 		cmdarr = command.split(' ')
 		command = cmdarr[0]
 		args = _.rest(cmdarr)
@@ -107,27 +100,21 @@ module.exports = AtomSaveCommands =
 
 		suppress = atom.config.get('save-commands.suppressPanel')
 		if suppress is false
-			@panel.show()
+			@display true
 
 		div = atom.views.getView(atom.workspace).getElementsByClassName('save-result')[0]
 
 		cspr.stdout.on 'data', (data)=>
 			# console.log "STD OUT: #{data}"
-			dataDiv = document.createElement('div')
-			dataDiv.textContent = data.toString()
-			dataDiv.classList.add('save-result-out')
-			@resultDiv.appendChild dataDiv
-			# div.scrollTop div.prop("scrollHeight")
+			
+			@atomSaveCommandsView.addData(data.toString(), 'save-result-out', false)
 
 		cspr.stderr.on 'data', (data)=>
 			# console.log "ERR OUT: #{data}"
-			@panel.show()
+			@display true
 			@hasError = true
-			dataDiv = document.createElement('div')
-			dataDiv.textContent = data.toString()
-			dataDiv.classList.add('save-result-error')
-			@resultDiv.appendChild dataDiv
-			# div.scrollTop div.prop("scrollHeight")
+			
+			@atomSaveCommandsView.addData(data.toString(), 'save-result-error', false)
 
 		cspr.stdout.on 'close', (code,signal)=>
 			# console.log "STD CLOSE"
@@ -136,15 +123,11 @@ module.exports = AtomSaveCommands =
 		cspr.stderr.on 'close', (code,signal)=>
 			# console.log "ERR CLOSE"
 			setTimeout ()=>
-				# dataDiv = document.createElement('div')
-				# dataDiv.textContent = "Done."
-				# dataDiv.classList.add('command-name')
-				# @resultDiv.appendChild dataDiv
 				callback()
 			,100
 
-	activate: (state) ->
-		@atomSaveCommandsView = new AtomSaveCommandsView(state.atomSaveCommandsViewState)
+	activate: () ->
+		@atomSaveCommandsView = new AtomSaveCommandsView
 		# @modalPanel = atom.workspace.addModalPanel(item: @atomSaveCommandsView.getElement(), visible: false)
 
 		# Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
@@ -169,45 +152,39 @@ module.exports = AtomSaveCommands =
 		# 			source = packageObj.selectedPath
 		# 			@executeOn(source,'batch-save-commands.json')
 
-		# console.log 'Save-commands registered text editor observer'
+		@subscriptions.add atom.workspace.addOpener (uri) =>			
+			if uri == @atomSaveCommandsGlobals.getURI()
+				new AtomSaveCommandsView 
+				
+				
+		@subscriptions.add new Disposable(-> 
+			atom.workspace.getPaneItems().forEach (item) ->
+				if item instanceof AtomSaveCommandsView
+					item.destroy()
+		)
+			
 		@subscriptions.add atom.workspace.observeTextEditors (editor)=>
-			# console.log "Registered onSave event with '#{editor.getPath()}'"
+			# Try should prevent json file from being required
 			@subscriptions.add editor.onDidSave (event)=>
 				try
-					@executeOn(event.path,'save-commands.json')
+					@executeOn(event.path,'save-commands.json') 
 				catch error
 					console.log error
+					
+		# @display true
 
-		@panel = atom.workspace.addBottomPanel(
-			item: document.createElement('div')
-			visible: true
-			priority: 300
-		)
-
-		# setTimeout ()=>
-		# 	panel.destroy()
-		# , @config.timeout
-
-		# @commandDiv = document.createElement('div')
-		# @commandDiv.classList.add('save-command')
-		@resultDiv = document.createElement('div')
-		@resultDiv.classList.add('save-result')
-
-		# @panel.item.appendChild(@commandDiv)
-		@panel.item.appendChild(@resultDiv)
-		@panel.hide()
+		@atomSaveCommandsView.addData(null, 'save-result', true)
 
 		@subscriptions.add atom.commands.add 'atom-workspace',
 			'core:cancel': =>
-				@killPanel()
+				@display false
 
-	killPanel: ()->
-		@panel.hide()
-		# @commandDiv.textContent = ""
-		@resultDiv.remove() if @resultDiv
-		@resultDiv = document.createElement('div')
-		@resultDiv.classList.add('save-result')
-		@panel.item.appendChild(@resultDiv)
+	display: (bool)->
+		if typeof bool == "boolean"
+			if bool
+				atom.workspace.open(@atomSaveCommandsGlobals.getURI())
+			else
+				atom.workspace.hide(@atomSaveCommandsGlobals.getURI())
 
 	tap: (o, fn) -> fn(o); o
 
@@ -263,15 +240,10 @@ module.exports = AtomSaveCommands =
 			callback @config
 
 	deactivate: ->
-		@panel.destroy()
 		@subscriptions.dispose()
-		@atomSaveCommandsView.destroy()
-
-	serialize: ->
-		atomSaveCommandsViewState: @atomSaveCommandsView.serialize()
 
 	executeOn: (path,configFile)->
-		@killPanel()
+		@display false
 		suppressPanel = atom.config.get('save-commands.suppressPanel')	# Load global configurations
 		@loadConfig path, configFile, ()=>
 			@getFilesOn path, (files)=>
@@ -280,20 +252,13 @@ module.exports = AtomSaveCommands =
 					commands = _.union commands, @getCommandsFor(file)
 				if commands.length > 0
 					if !suppressPanel
-						@panel.show()
+						@display true
 					@hasError = false
 
 					cleanup = (err)->
 						setTimeout ()=>
-							dataDiv = document.createElement('div')
-							dataDiv.textContent = "Done."
-							dataDiv.classList.add('command-name')
-							@resultDiv.appendChild dataDiv
+							@atomSaveCommandsView.addData('Done.', 'command-name', false)
 						,100
-
-						# setTimeout ()=>
-						# 	@killPanel() if not @hasError
-						# , @config.timeout
 
 					async.eachSeries commands, @executeCommand.bind(@), cleanup.bind(@)
 
