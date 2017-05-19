@@ -6,7 +6,8 @@ This effectively eliminates the need for file watchers, and simplifies your buil
 You can define as many globs and commands as you want.
 The command(s) and their output will be displayed in a dock at the bottom of the screen. Hit 'Esc' to dismiss the dock.  
 
-*Note:* This package is a fork of the original "save-commands" package created by Jason Hunt (JsonHunt) that can be found [here](https://github.com/JsonHunt/save-commands).  
+*Note:* This package is a fork of the original "save-commands" package created by Jason Hunt (JsonHunt) that can be found [here](https://github.com/JsonHunt/save-commands).
+
 Updates have been made to make it more user friendly and work with Atom's new dock system.
 
 ### How to use
