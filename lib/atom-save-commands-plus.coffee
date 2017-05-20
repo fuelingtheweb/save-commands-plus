@@ -6,6 +6,7 @@ spawn = require 'cross-spawn-async'
 _ = require 'underscore'
 fs = require 'fs'
 async = require 'async'
+uuidV4 = require('uuid/v4');
 
 AtomSaveCommandsGlobals = require './atom-save-commands-globals'
 AtomSaveCommandsView = require './atom-save-commands-view'
@@ -46,7 +47,7 @@ module.exports = AtomSaveCommands =
 		suppressPanel:
 			type: 'boolean'
 			default: 'false'
-			title: 'Only display command output panel on error'
+			title: 'Only open dock on error'
 
 	showError: (gc)->
 		epanel = atom.workspace.addBottomPanel(
@@ -87,10 +88,18 @@ module.exports = AtomSaveCommands =
 				command = S(command).replaceAll(fkey,value).s
 			command
 
-	executeCommand: (command, callback) ->
+	executeCommand: (id, command, callback) ->
 		# console.log "COMMAND #{command}"
-		
-		@atomSaveCommandsView.addData(command, 'command-name', false)
+		@atomSaveCommandsView.addData({
+			clsList: 'save-result'
+			newResult: true
+			id: id
+		})
+		@atomSaveCommandsView.addData({
+			content: command
+			clsList: 'command-name'
+			id: id
+		})
 		
 		cmdarr = command.split(' ')
 		command = cmdarr[0]
@@ -98,23 +107,28 @@ module.exports = AtomSaveCommands =
 		cspr = spawn command, args ,
 			cwd: @config.cwd
 
-		suppress = atom.config.get('save-commands.suppressPanel')
-		if suppress is false
-			@display true
+		@display true
 
 		div = atom.views.getView(atom.workspace).getElementsByClassName('save-result')[0]
 
 		cspr.stdout.on 'data', (data)=>
 			# console.log "STD OUT: #{data}"
-			
-			@atomSaveCommandsView.addData(data.toString(), 'save-result-out', false)
+			@atomSaveCommandsView.addData({
+				content: data.toString()
+				clsList: 'save-result-out',
+				id: id
+			})
 
 		cspr.stderr.on 'data', (data)=>
 			# console.log "ERR OUT: #{data}"
-			@display true
+			@display(true, true)
 			@hasError = true
-			
-			@atomSaveCommandsView.addData(data.toString(), 'save-result-error', false)
+		
+			@atomSaveCommandsView.addData({
+				content: data.toString()
+				clsList: 'save-result-error'
+				id: id
+			})
 
 		cspr.stdout.on 'close', (code,signal)=>
 			# console.log "STD CLOSE"
@@ -122,14 +136,13 @@ module.exports = AtomSaveCommands =
 
 		cspr.stderr.on 'close', (code,signal)=>
 			# console.log "ERR CLOSE"
-			setTimeout ()=>
+			setTimeout () =>
 				callback()
 			,100
 
 	activate: () ->
 		@atomSaveCommandsView = new AtomSaveCommandsView
-		# @modalPanel = atom.workspace.addModalPanel(item: @atomSaveCommandsView.getElement(), visible: false)
-
+		
 		# Events subscribed to in atom's system can be easily cleaned up with a CompositeDisposable
 		@subscriptions = new CompositeDisposable
 
@@ -170,21 +183,31 @@ module.exports = AtomSaveCommands =
 					@executeOn(event.path,'save-commands.json') 
 				catch error
 					console.log error
-					
-		# @display true
-
-		@atomSaveCommandsView.addData(null, 'save-result', true)
 
 		@subscriptions.add atom.commands.add 'atom-workspace',
 			'core:cancel': =>
 				@display false
 
-	display: (bool)->
+	display: (bool, force)->
 		if typeof bool == "boolean"
 			if bool
-				atom.workspace.open(@atomSaveCommandsGlobals.getURI())
+				me = @
+				suppressPanel = atom.config.get('save-commands-plus.suppressPanel')	# Load global configurations
+				dock = atom.workspace.paneContainerForURI(me.atomSaveCommandsGlobals.getURI())
+				if dock
+					@showDock(suppressPanel, force)
+				else
+					atom.workspace.open(@atomSaveCommandsGlobals.getURI(), {activatePane: false}).then((value)->
+						me.showDock(suppressPanel, force)
+				)
 			else
 				atom.workspace.hide(@atomSaveCommandsGlobals.getURI())
+				
+	showDock: (suppressPanel, force) ->
+		if !suppressPanel || force
+			dock = atom.workspace.paneContainerForURI(@atomSaveCommandsGlobals.getURI())
+			if dock
+				dock.show()
 
 	tap: (o, fn) -> fn(o); o
 
@@ -243,24 +266,29 @@ module.exports = AtomSaveCommands =
 		@subscriptions.dispose()
 
 	executeOn: (path,configFile)->
-		@display false
-		suppressPanel = atom.config.get('save-commands.suppressPanel')	# Load global configurations
+		# @display false
+		@atomSaveCommandsView.removeFinishedCommands()
 		@loadConfig path, configFile, ()=>
 			@getFilesOn path, (files)=>
+				resultId = uuidV4() 
 				commands = []
 				for file in files
 					commands = _.union commands, @getCommandsFor(file)
 				if commands.length > 0
-					if !suppressPanel
-						@display true
+					@display true
 					@hasError = false
 
 					cleanup = (err)->
 						setTimeout ()=>
-							@atomSaveCommandsView.addData('Done.', 'command-name', false)
+							@atomSaveCommandsView.addData({
+								content: 'done'
+								clsList: 'command-name'
+								done: true
+								id: resultId
+							})
 						,100
 
-					async.eachSeries commands, @executeCommand.bind(@), cleanup.bind(@)
+					async.eachSeries commands, @executeCommand.bind(@, resultId), cleanup.bind(@)
 
 
 	getFilesOn: (absPath, callback)->

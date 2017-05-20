@@ -9,10 +9,21 @@ class AtomSaveCommandsView
 		# Create root element
 		@element = document.createElement('div')
 		@element.classList.add('atom-save-commands')
+		@resultSetObj = {}
 
-	# Content - string of content you want to display
-	# clsList - string of classes you want to display (separated by space)
-	addData: (content, clsList, newResult) ->
+	# Content {Optional} - string of content you want to display
+	# clsList {Required} - string of classes you want to display (separated by space)
+	addData: (params) ->
+		# Id is a required paramter
+		# If this is not a new result the id must already exist
+		id = params.id
+		
+		# Initial params and default values
+		content = params.content || null
+		clsList = params.clsList || ''
+		newResult = params.newResult || false
+		done = params.done || false
+		
 		clsList = clsList.split(" ")
 		atBottom = @getIsScrolledToBottom()
 		
@@ -24,12 +35,17 @@ class AtomSaveCommandsView
 		newDiv.classList.add.apply(newDiv.classList, clsList)
 		
 		# Append to base container if new result (or first item)
-		# Otherwise append to the previously made result		
-		if newResult || !@resultDiv
-			@resultDiv = newDiv
+		# Otherwise append to the previously made result
+		if newResult
+			@resultSetObj[id] = {el: newDiv, done: false, id: id}
+			
 			@element.appendChild(newDiv)
-		else 
-			@resultDiv.appendChild(newDiv)
+		else
+			@findResultSetEl(id, (obj) ->
+				obj.el.appendChild(newDiv)
+				if done
+					@markCommandAsDone(obj.id)
+			)
 			
 		@autoScrollBottom(atBottom)
 	
@@ -42,9 +58,34 @@ class AtomSaveCommandsView
 		if isScrolledToBottom
 			@element.scrollTop = @element.scrollHeight - (@element.clientHeight)
 	
+	traverseResultSetObj: (callback) ->
+		for own i,child of @resultSetObj
+			callback.call(@, child, i)
+	
+	findResultSetEl: (id, callback) ->
+		@traverseResultSetObj((obj, i)->
+			if obj.id == id
+				callback.call(@, obj)
+		)
+	
+	# Marks a result set as done
+	markCommandAsDone: (id) ->
+		@findResultSetEl(id, (obj) ->
+			obj.done = true
+		)
+	
+	# Removes all result sets that have had 'done' marked to true
+	removeFinishedCommands: () ->
+		@traverseResultSetObj((obj, id)->
+			if obj.done
+				obj.el.remove()
+				delete @resultSetObj[id]
+		)	
+	
 	# Removes all nodes from main element (container)
 	clearData: ->
 		@element.innerHTML = "" 
+		@resultSetObj = {}
 		
 	# Returns an object that can be retrieved when package is activated
 	serialize: ->

@@ -45,6 +45,7 @@
     "cross-spawn-async": "^2.1.8",
     "minimatch": "*",
     "string": "*",
-    "underscore": "^1.8.2"
+    "underscore": "^1.8.2",
+    "uuid": "^3.0.1"
   }
 }
