@@ -1,5 +1,19 @@
-## 0.0.0
+## 0.9.1
+* Added 'Delete old command' setting to potentially preserve log
+* Made panel close on save if suppress panel is enabled
+
+## 0.9.0
+* Fixed issue with not deleting old results
+* Fixed issue preventing errors from displaying
+* Added proper handling of multiple commands being run
+* Error result will now open when the errors only setting is enabled
+* Pane is now always being logged to but only automatically opens when supposed to
+* Added unique identifiers to each result set for better management
+
+## 0.8.0
 * Forked original project by Jason Hunt (JsonHunt) to create a package with new functionality, and more user friendly features.
+* Added proper auto scrolling
+* Now using dock instead of panel for easier handling of display
 
 ## 0.6.8
 * removed menu items from file tree
