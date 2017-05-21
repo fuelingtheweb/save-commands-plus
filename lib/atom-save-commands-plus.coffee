@@ -48,21 +48,11 @@ module.exports = AtomSaveCommands =
 			type: 'boolean'
 			default: 'false'
 			title: 'Only open dock on error'
-
-	showError: (gc)->
-		epanel = atom.workspace.addBottomPanel(
-			item: document.createElement('div')
-			visible: true
-			priority: 100
-		)
-		@resultDiv = document.createElement('div')
-		@resultDiv.classList.add('save-result')
-		@resultDiv.classList.add('save-result-visible')
-		@resultDiv.classList.add('save-result-error') 
-		epanel.item.appendChild(@resultDiv)
-		setTimeout ()->
-			epanel.destroy()
-		, @config.timeout
+		
+		deleteOld:
+			type: 'boolean'
+			default: 'true'
+			title: 'Delete old commands'
 
 	convertCommand: (eventPath, command) ->
 			relativePath = atom.project.relativize(eventPath)
@@ -266,8 +256,12 @@ module.exports = AtomSaveCommands =
 		@subscriptions.dispose()
 
 	executeOn: (path,configFile)->
-		# @display false
-		@atomSaveCommandsView.removeFinishedCommands()
+		if atom.config.get('save-commands-plus.suppressPanel')
+			@display false
+
+		if atom.config.get('save-commands-plus.deleteOld')
+			@atomSaveCommandsView.removeFinishedCommands()
+		
 		@loadConfig path, configFile, ()=>
 			@getFilesOn path, (files)=>
 				resultId = uuidV4() 
