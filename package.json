@@ -7,7 +7,7 @@
   "engines": {
     "atom": ">=1.17.0 <2.0.0"
   },
-  "repository": "github.com:pixilz/save-commands.git",
+  "repository": "https://github.com/pixilz/save-commands-plus",
   "keywords": [
     "monitor",
     "watch",
